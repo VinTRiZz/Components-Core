@@ -2,15 +2,24 @@ cmake_minimum_required(VERSION 3.7)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(
-    COMPONENTS_COMPONENT_ROOT_DIR
-    ${CMAKE_CURRENT_SOURCE_DIR}/..
-)
+if (NOT COMPONENTS_COMPONENT_ROOT_DIR)
+    set(
+        COMPONENTS_COMPONENT_ROOT_DIR
+        ${CMAKE_CURRENT_SOURCE_DIR}/..
+    )
 
-set(
-    COMPONENTS_INSTALL_PATH
-    ${CMAKE_CURRENT_SOURCE_DIR}/../BIN
-)
+else()
+    message(STATUS "[COMPONENTS] Components root dir set as: " ${COMPONENTS_COMPONENT_ROOT_DIR})
+endif()
+
+if (NOT COMPONENTS_INSTALL_PATH)
+    set(
+        COMPONENTS_INSTALL_PATH
+        ${CMAKE_CURRENT_SOURCE_DIR}/../BIN
+    )
+else()
+    message(STATUS "[COMPONENTS] Components install prefix set as: " ${COMPONENTS_INSTALL_PATH})
+endif()
 
 # ARGUMENTS:
 # COMPONENT_NAME --> Name of linking component
@@ -18,7 +27,7 @@ set(
 # Component add common function
 function(COMPONENTS_LINK_COMPONENT TARGET_NAME COMPONENT_NAME)
     if(NOT EXISTS ${COMPONENTS_COMPONENT_ROOT_DIR}/Components-${COMPONENT_NAME})
-        message(FATAL_ERROR "Error searching for component: ${COMPONENT_NAME} (not exist). Searching directory: ${COMPONENTS_COMPONENT_ROOT_DIR}")
+        message(FATAL_ERROR "[COMPONENTS] Error searching for: ${COMPONENT_NAME} (not exist). Searching directory: ${COMPONENTS_COMPONENT_ROOT_DIR}")
     endif()
 
     set(
@@ -27,7 +36,7 @@ function(COMPONENTS_LINK_COMPONENT TARGET_NAME COMPONENT_NAME)
     )
 
     if(NOT EXISTS ${LIBRARY_INCLUDE_DIR})
-        message(FATAL_ERROR "Error searching for ${COMPONENT_NAME} (not exist). Searching directory: ${COMPONENTS_COMPONENT_ROOT_DIR}")
+        message(FATAL_ERROR "[COMPONENTS] Error searching for ${COMPONENT_NAME} (not exist). Searching directory: ${COMPONENTS_COMPONENT_ROOT_DIR}")
     endif()
 
     target_link_libraries(
@@ -39,7 +48,7 @@ function(COMPONENTS_LINK_COMPONENT TARGET_NAME COMPONENT_NAME)
         ${TARGET_NAME} PUBLIC
         ${LIBRARY_INCLUDE_DIR}
     )
-    message(STATUS "Linking target " ${TARGET_NAME} " : added lib " ${COMPONENT_NAME})
+    message(STATUS "[COMPONENTS] Linking target " ${TARGET_NAME} " : added component " ${COMPONENT_NAME})
 endfunction()
 
 
@@ -89,11 +98,11 @@ function(COMPONENTS_CONFIGURE_COMPONENT COMPONENT_NAME)
 
     # Includes
     if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src")
-        message(FATAL_ERROR "Error configuring library! Not found sources dir: " "${CMAKE_CURRENT_SOURCE_DIR}/src")
+        message(FATAL_ERROR "[COMPONENTS] Error configuring component! Not found sources dir: " "${CMAKE_CURRENT_SOURCE_DIR}/src")
     endif()
 
     target_include_directories(${COMPONENT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
-    message(STATUS "Configured component: " ${COMPONENT_NAME})
+    message(STATUS "[COMPONENTS] Configured component: " ${COMPONENT_NAME})
 endfunction()
 
 
