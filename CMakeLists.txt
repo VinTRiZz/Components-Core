@@ -21,6 +21,10 @@ else()
     message(STATUS "[COMPONENTS] Components install prefix set as: " ${COMPONENTS_INSTALL_PATH})
 endif()
 
+if (NOT COMPONENTS_IS_ENABLED_QT)
+    set(COMPONENTS_IS_ENABLED_QT OFF)
+endif()
+
 # ARGUMENTS:
 # COMPONENT_NAME --> Name of linking component
 # ARGS AFTER COMPONENT_NAME --> Extra libraries to link (boost_system, ssl, etc.)
