@@ -52,6 +52,12 @@ function(COMPONENTS_LINK_COMPONENT TARGET_NAME COMPONENT_NAME)
         ${TARGET_NAME} PUBLIC
         ${LIBRARY_INCLUDE_DIR}
     )
+
+    # Обработка хедеров компонента
+    if (COMPONENTS_IS_ENABLED_QT)
+        target_compile_definitions(${TARGET_NAME} PRIVATE -DCOMPONENTS_IS_ENABLED_QT)
+    endif()
+
     message(STATUS "[COMPONENTS] Linking target " ${TARGET_NAME} " : added component " ${COMPONENT_NAME})
 endfunction()
 
@@ -79,6 +85,11 @@ function(COMPONENTS_ADD_COMPONENT_TEST COMPONENT_NAME)
         ${COMPONENT_NAME_TEST} PUBLIC
         ${COMPONENT_MODULE_INCLUDES}
     )
+
+    # Обработка хедеров компонента
+    if (COMPONENTS_IS_ENABLED_QT)
+        target_compile_definitions(${COMPONENT_NAME_TEST} PRIVATE -DCOMPONENTS_IS_ENABLED_QT)
+    endif()
 
     include(GoogleTest)
     gtest_discover_tests(${COMPONENT_NAME_TEST})
@@ -110,6 +121,11 @@ function(COMPONENTS_CONFIGURE_COMPONENT COMPONENT_NAME)
     add_library(${COMPONENT_NAME} SHARED)
     target_link_libraries(${COMPONENT_NAME} PRIVATE ${ARGN} )
 
+    # Работа с Qt
+    if (COMPONENTS_IS_ENABLED_QT)
+        target_compile_definitions(${COMPONENT_NAME} PRIVATE -DCOMPONENTS_IS_ENABLED_QT)
+    endif()
+
     install(TARGETS ${COMPONENT_NAME}
         RUNTIME     DESTINATION ${COMPONENTS_INSTALL_PATH}
         LIBRARY     DESTINATION ${COMPONENTS_INSTALL_PATH}/lib
@@ -129,7 +145,7 @@ function(COMPONENTS_CONFIGURE_COMPONENT COMPONENT_NAME)
         set_target_properties(${COMPONENT_NAME} PROPERTIES SUFFIX ".so.DEBUG")
     elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
         target_compile_definitions(${COMPONENT_NAME} PRIVATE NDEBUG)
-        target_compile_options(${COMPONENT_NAME} PRIVATE -O3)
+        target_compile_options(${COMPONENT_NAME} PRIVATE -O2)
         set_target_properties(${COMPONENT_NAME} PROPERTIES SUFFIX ".so")
     endif()
 
