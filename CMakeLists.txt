@@ -155,7 +155,7 @@ function(COMPONENTS_CONFIGURE_COMPONENT COMPONENT_NAME)
     endif()
     target_include_directories(${COMPONENT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
-    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests")
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests" AND TARGET GTest::gtest)
         message(STATUS "[COMPONENTS] Searching for tests...")
         enable_testing()
         COMPONENTS_ADD_COMPONENT_TEST(${COMPONENT_NAME})
