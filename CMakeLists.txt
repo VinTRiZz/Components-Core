@@ -1,6 +1,27 @@
+# ====================================== #
+# Components core repository. Used to configure AAAAAAAAAAAAL others
+#
+# ========== EXAMPLE OF USAGE: =========
+#
+# Just copy this into another Component and write your values
+#
+# COMPONENTS_REQUIRE_QT(5 Core Gui Widgets)
+#
+# COMPONENTS_CONFIGURE_COMPONENT(Common
+#    Qt5::Core
+#    Qt5::Gui
+#    Qt5::Widgets
+# )
+#
+# COMPONENTS_LINK_COMPONENT(Common Logger)
+#
+# ====================================== #
+
+# Common setings
 cmake_minimum_required(VERSION 3.7)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 
 if (NOT COMPONENTS_COMPONENT_ROOT_DIR)
     set(
