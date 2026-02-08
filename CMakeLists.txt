@@ -22,13 +22,10 @@ cmake_minimum_required(VERSION 3.7)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-
+get_property(COMPONENTS_COMPONENT_ROOT_DIR GLOBAL PROPERTY COMPONENTS_COMPONENT_ROOT_DIR)
 if (NOT COMPONENTS_COMPONENT_ROOT_DIR)
-    set(
-        COMPONENTS_COMPONENT_ROOT_DIR
-        ${CMAKE_CURRENT_SOURCE_DIR}/..
-    )
-
+    set_property(GLOBAL PROPERTY COMPONENTS_COMPONENT_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/..)
+    get_property(COMPONENTS_COMPONENT_ROOT_DIR GLOBAL PROPERTY COMPONENTS_COMPONENT_ROOT_DIR)
 else()
     message(STATUS "[COMPONENTS] Components root dir set as: " ${COMPONENTS_COMPONENT_ROOT_DIR})
 endif()
@@ -42,15 +39,14 @@ else()
     message(STATUS "[COMPONENTS] Components install prefix set as: " ${COMPONENTS_INSTALL_PATH})
 endif()
 
-if (NOT COMPONENTS_IS_ENABLED_QT)
-    set(COMPONENTS_IS_ENABLED_QT OFF)
-endif()
+option(COMPONENTS_IS_ENABLED_QT OFF)
 
 # ARGUMENTS:
 # COMPONENT_NAME --> Name of linking component
 # ARGS AFTER COMPONENT_NAME --> Extra libraries to link (boost_system, ssl, etc.)
 # Component add common function
 function(COMPONENTS_LINK_COMPONENT TARGET_NAME COMPONENT_NAME)
+    get_property(COMPONENTS_COMPONENT_ROOT_DIR GLOBAL PROPERTY COMPONENTS_COMPONENT_ROOT_DIR)
     if(NOT EXISTS ${COMPONENTS_COMPONENT_ROOT_DIR}/Components-${COMPONENT_NAME})
         message(FATAL_ERROR "[COMPONENTS] Error searching for: ${COMPONENT_NAME} (not exist). Searching directory: ${COMPONENTS_COMPONENT_ROOT_DIR}")
     endif()
@@ -85,6 +81,13 @@ endfunction()
 
 # Components test adding function
 function(COMPONENTS_ADD_COMPONENT_TEST COMPONENT_NAME)
+    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests" OR NOT TARGET GTest::gtest)
+        message(WARNING "[COMPONENTS] Failed to add tests for component: ${COMPONENT_NAME}")
+        return()
+    endif()
+
+    enable_testing()
+
     set(COMPONENT_NAME_TEST ${COMPONENT_NAME}_TEST)
 
     add_executable(${COMPONENT_NAME_TEST})
@@ -116,7 +119,6 @@ function(COMPONENTS_ADD_COMPONENT_TEST COMPONENT_NAME)
     gtest_discover_tests(${COMPONENT_NAME_TEST})
 
     # Надо же ему что-то использовать из модуля
-    COMPONENTS_LINK_COMPONENT(${COMPONENT_NAME_TEST} ${COMPONENT_NAME})
     message(STATUS "[COMPONENTS] Added test: " ${COMPONENT_NAME_TEST})
 endfunction()
 
@@ -133,19 +135,17 @@ function(COMPONENTS_CONFIGURE_COMPONENT COMPONENT_NAME)
         )
     endif()
 
-    # Qt configuration
-    set(CMAKE_AUTOUIC ON)
-    set(CMAKE_AUTOMOC ON)
-    set(CMAKE_AUTORCC ON)
+    # Qt
+    if (COMPONENTS_IS_ENABLED_QT)
+        set(CMAKE_AUTOUIC ON)
+        set(CMAKE_AUTOMOC ON)
+        set(CMAKE_AUTORCC ON)
+        target_compile_definitions(${COMPONENT_NAME} PRIVATE -DCOMPONENTS_IS_ENABLED_QT)
+    endif()
 
     # Library target
     add_library(${COMPONENT_NAME} SHARED)
     target_link_libraries(${COMPONENT_NAME} PRIVATE ${ARGN} )
-
-    # Работа с Qt
-    if (COMPONENTS_IS_ENABLED_QT)
-        target_compile_definitions(${COMPONENT_NAME} PRIVATE -DCOMPONENTS_IS_ENABLED_QT)
-    endif()
 
     install(TARGETS ${COMPONENT_NAME}
         RUNTIME     DESTINATION ${COMPONENTS_INSTALL_PATH}
@@ -161,11 +161,9 @@ function(COMPONENTS_CONFIGURE_COMPONENT COMPONENT_NAME)
 
     # Suffixes
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-        target_compile_definitions(${COMPONENT_NAME} PRIVATE DEBUG_MODE)
         target_compile_options(${COMPONENT_NAME} PRIVATE -g)
         set_target_properties(${COMPONENT_NAME} PROPERTIES SUFFIX ".so.DEBUG")
     elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
-        target_compile_definitions(${COMPONENT_NAME} PRIVATE NDEBUG)
         target_compile_options(${COMPONENT_NAME} PRIVATE -O2)
         set_target_properties(${COMPONENT_NAME} PROPERTIES SUFFIX ".so")
     endif()
@@ -176,18 +174,5 @@ function(COMPONENTS_CONFIGURE_COMPONENT COMPONENT_NAME)
     endif()
     target_include_directories(${COMPONENT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
-    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests" AND TARGET GTest::gtest)
-        message(STATUS "[COMPONENTS] Searching for tests...")
-        enable_testing()
-        COMPONENTS_ADD_COMPONENT_TEST(${COMPONENT_NAME})
-    endif()
-
     message(STATUS "[COMPONENTS] Configured component: " ${COMPONENT_NAME})
-endfunction()
-
-
-# Qt component searching function
-function(COMPONENTS_REQUIRE_QT COMPS_QT_VER)
-    find_package(QT NAMES Qt${COMPS_QT_VER} REQUIRED COMPONENTS ${ARGN})
-    find_package(Qt${COMPS_QT_VER} REQUIRED COMPONENTS ${ARGN})
 endfunction()
