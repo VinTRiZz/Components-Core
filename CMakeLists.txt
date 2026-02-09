@@ -30,11 +30,14 @@ else()
     message(STATUS "[COMPONENTS] Components root dir set as: " ${COMPONENTS_COMPONENT_ROOT_DIR})
 endif()
 
+get_property(COMPONENTS_INSTALL_PATH GLOBAL PROPERTY COMPONENTS_INSTALL_PATH)
 if (NOT COMPONENTS_INSTALL_PATH)
-    set(
+    set_property(
+        GLOBAL PROPERTY
         COMPONENTS_INSTALL_PATH
         ${CMAKE_CURRENT_SOURCE_DIR}/../BIN
     )
+    get_property(COMPONENTS_INSTALL_PATH GLOBAL PROPERTY COMPONENTS_INSTALL_PATH)
 else()
     message(STATUS "[COMPONENTS] Components install prefix set as: " ${COMPONENTS_INSTALL_PATH})
 endif()
