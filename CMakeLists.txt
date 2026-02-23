@@ -143,7 +143,6 @@ function(COMPONENTS_CONFIGURE_COMPONENT COMPONENT_NAME)
         set(CMAKE_AUTOUIC ON)
         set(CMAKE_AUTOMOC ON)
         set(CMAKE_AUTORCC ON)
-        target_compile_definitions(${COMPONENT_NAME} PRIVATE -DCOMPONENTS_IS_ENABLED_QT)
     endif()
 
     # Library target
@@ -177,6 +176,11 @@ function(COMPONENTS_CONFIGURE_COMPONENT COMPONENT_NAME)
         message(FATAL_ERROR "[COMPONENTS] Error configuring component! Not found sources dir: " "${CMAKE_CURRENT_SOURCE_DIR}/src")
     endif()
     target_include_directories(${COMPONENT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
+
+    # Qt enabling
+    if (COMPONENTS_IS_ENABLED_QT)
+        target_compile_definitions(${COMPONENT_NAME} PRIVATE -DCOMPONENTS_IS_ENABLED_QT)
+    endif()
 
     message(STATUS "[COMPONENTS] Configured component: " ${COMPONENT_NAME})
 endfunction()
