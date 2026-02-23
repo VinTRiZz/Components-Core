@@ -159,8 +159,8 @@ function(COMPONENTS_CONFIGURE_COMPONENT COMPONENT_NAME)
     )
 
     # Files
-    file(GLOB_RECURSE HEADERS "src/*.hpp" "src/*.h")
-    file(GLOB_RECURSE SOURCES "src/*.cpp")
+    file(GLOB_RECURSE HEADERS "src/*.hpp" "src/*.h" "src/*.inl")
+    file(GLOB_RECURSE SOURCES "src/*.cpp" "src/*.cxx")
     target_sources(${COMPONENT_NAME} PRIVATE ${HEADERS} ${SOURCES} ${UIFILES})
 
     # Suffixes
