@@ -104,6 +104,7 @@ function(COMPONENTS_ADD_COMPONENT_TEST COMPONENT_NAME)
         ${COMPONENT_NAME_TEST} PRIVATE
         GTest::gtest_main
         GTest::gtest
+        ${COMPONENT_NAME}
         ${COMPONENT_MODULE_LIBS}
     )
 
