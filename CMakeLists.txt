@@ -82,51 +82,6 @@ function(COMPONENTS_LINK_COMPONENT TARGET_NAME COMPONENT_NAME)
 endfunction()
 
 
-# Components test adding function
-function(COMPONENTS_ADD_COMPONENT_TEST COMPONENT_NAME)
-    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests" OR NOT TARGET GTest::gtest)
-        message(WARNING "[COMPONENTS] Failed to add tests for component: ${COMPONENT_NAME}")
-        return()
-    endif()
-
-    enable_testing()
-
-    set(COMPONENT_NAME_TEST ${COMPONENT_NAME}_TEST)
-
-    add_executable(${COMPONENT_NAME_TEST})
-
-    file(GLOB TESTING_SOURCES "tests/*.cpp")
-    target_sources(${COMPONENT_NAME_TEST} PRIVATE ${TESTING_SOURCES})
-    target_include_directories(${COMPONENT_NAME_TEST} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
-
-    get_target_property(COMPONENT_MODULE_LIBS ${COMPONENT_NAME} LINK_LIBRARIES)
-    target_link_libraries(
-        ${COMPONENT_NAME_TEST} PRIVATE
-        GTest::gtest_main
-        GTest::gtest
-        ${COMPONENT_NAME}
-        ${COMPONENT_MODULE_LIBS}
-    )
-
-    get_target_property(COMPONENT_MODULE_INCLUDES ${COMPONENT_NAME} INCLUDE_DIRECTORIES)
-    target_include_directories(
-        ${COMPONENT_NAME_TEST} PUBLIC
-        ${COMPONENT_MODULE_INCLUDES}
-    )
-
-    # Обработка хедеров компонента
-    if (COMPONENTS_IS_ENABLED_QT)
-        target_compile_definitions(${COMPONENT_NAME_TEST} PRIVATE -DCOMPONENTS_IS_ENABLED_QT)
-    endif()
-
-    include(GoogleTest)
-    gtest_discover_tests(${COMPONENT_NAME_TEST})
-
-    # Надо же ему что-то использовать из модуля
-    message(STATUS "[COMPONENTS] Added test: " ${COMPONENT_NAME_TEST})
-endfunction()
-
-
 
 # Component configuration function
 function(COMPONENTS_CONFIGURE_COMPONENT COMPONENT_NAME)
@@ -185,3 +140,58 @@ function(COMPONENTS_CONFIGURE_COMPONENT COMPONENT_NAME)
 
     message(STATUS "[COMPONENTS] Configured component: " ${COMPONENT_NAME})
 endfunction()
+
+
+# Components test adding function
+function(COMPONENTS_ADD_COMPONENT_TEST COMPONENT_NAME)
+    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests" OR NOT TARGET GTest::gtest)
+        message(WARNING "[COMPONENTS] Failed to add tests for component: ${COMPONENT_NAME}")
+        return()
+    endif()
+
+    enable_testing()
+
+    set(COMPONENT_NAME_TEST TEST_${COMPONENT_NAME})
+
+    add_executable(${COMPONENT_NAME_TEST})
+
+    file(GLOB TESTING_SOURCES "tests/*.cpp")
+    target_sources(${COMPONENT_NAME_TEST} PRIVATE ${TESTING_SOURCES})
+    target_include_directories(${COMPONENT_NAME_TEST} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
+
+    get_target_property(COMPONENT_MODULE_LIBS ${COMPONENT_NAME} LINK_LIBRARIES)
+    if (COMPONENT_MODULE_LIBS_FOUND)
+        target_link_libraries(
+            ${COMPONENT_NAME_TEST} PRIVATE
+            GTest::gtest_main
+            GTest::gtest
+            ${COMPONENT_NAME}
+            ${COMPONENT_MODULE_LIBS}
+        )
+    else()
+        target_link_libraries(
+            ${COMPONENT_NAME_TEST} PRIVATE
+            GTest::gtest_main
+            GTest::gtest
+            ${COMPONENT_NAME}
+        )
+    endif()
+
+    get_target_property(COMPONENT_MODULE_INCLUDES ${COMPONENT_NAME} INCLUDE_DIRECTORIES)
+    target_include_directories(
+        ${COMPONENT_NAME_TEST} PUBLIC
+        ${COMPONENT_MODULE_INCLUDES}
+    )
+
+    # Обработка хедеров компонента
+    if (COMPONENTS_IS_ENABLED_QT)
+        target_compile_definitions(${COMPONENT_NAME_TEST} PRIVATE -DCOMPONENTS_IS_ENABLED_QT)
+    endif()
+
+    include(GoogleTest)
+    gtest_discover_tests(${COMPONENT_NAME_TEST})
+
+    # Надо же ему что-то использовать из модуля
+    message(STATUS "[COMPONENTS] Added test: " ${COMPONENT_NAME_TEST})
+endfunction()
+
