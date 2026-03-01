@@ -160,22 +160,18 @@ function(COMPONENTS_ADD_COMPONENT_TEST COMPONENT_NAME)
     target_include_directories(${COMPONENT_NAME_TEST} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
     get_target_property(COMPONENT_MODULE_LIBS ${COMPONENT_NAME} LINK_LIBRARIES)
-    if (COMPONENT_MODULE_LIBS_FOUND)
-        target_link_libraries(
-            ${COMPONENT_NAME_TEST} PRIVATE
-            GTest::gtest_main
-            GTest::gtest
-            ${COMPONENT_NAME}
-            ${COMPONENT_MODULE_LIBS}
-        )
-    else()
-        target_link_libraries(
-            ${COMPONENT_NAME_TEST} PRIVATE
-            GTest::gtest_main
-            GTest::gtest
-            ${COMPONENT_NAME}
-        )
-    endif()
+    foreach(LIB_LIST COMPONENT_MODULE_LIBS)
+        if("${${LIB_LIST}}" STREQUAL "${LIB_LIST}-NOTFOUND")
+            set(${LIB_LIST} "")
+        endif()
+    endforeach()
+    target_link_libraries(
+        ${COMPONENT_NAME_TEST} PRIVATE
+        GTest::gtest_main
+        GTest::gtest
+        ${COMPONENT_NAME}
+        ${COMPONENT_MODULE_LIBS}
+    )
 
     get_target_property(COMPONENT_MODULE_INCLUDES ${COMPONENT_NAME} INCLUDE_DIRECTORIES)
     target_include_directories(
