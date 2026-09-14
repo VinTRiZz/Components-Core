@@ -82,7 +82,7 @@ function(COMPONENTS_LINK_COMPONENT TARGET_NAME COMPONENT_NAME)
 endfunction()
 
 
-
+# BACKWARD COMPATIBILITY
 # Component configuration function
 function(COMPONENTS_CONFIGURE_COMPONENT COMPONENT_NAME)
     # Check if project is self-hosted
@@ -139,6 +139,60 @@ function(COMPONENTS_CONFIGURE_COMPONENT COMPONENT_NAME)
     endif()
 
     message(STATUS "[COMPONENTS] Configured component: " ${COMPONENT_NAME})
+endfunction()
+
+
+# Component configuration function
+function(COMPONENTS_CONFIGURE_COMPONENT_V2 COMPONENT_NAME COMPONENT_VERSION)
+    # Check if project is self-hosted
+    if (NOT DEFINED PROJECT_NAME)
+        message(FATAL_ERROR "[COMPONENTS] v2 Failure: It's prohibited to work with component as a complete project")
+    endif()
+
+    # Library target
+    add_library(${COMPONENT_NAME} SHARED)
+    target_link_libraries(${COMPONENT_NAME} PRIVATE ${ARGN} )
+
+    get_property(COMPONENTS_INSTALL_PATH GLOBAL PROPERTY COMPONENTS_INSTALL_PATH)
+    install(TARGETS ${COMPONENT_NAME}
+        RUNTIME     DESTINATION ${COMPONENTS_INSTALL_PATH}
+        LIBRARY     DESTINATION ${COMPONENTS_INSTALL_PATH}/lib
+        ARCHIVE     DESTINATION ${COMPONENTS_INSTALL_PATH}/lib/static
+        INCLUDES    DESTINATION ${COMPONENTS_INSTALL_PATH}/include
+    )
+
+    # Files
+    file(GLOB_RECURSE HEADERS "src/*.hpp" "src/*.h" "src/*.inl")
+    file(GLOB_RECURSE SOURCES "src/*.cpp" "src/*.cxx")
+    target_sources(${COMPONENT_NAME} PRIVATE ${HEADERS} ${SOURCES} ${UIFILES})
+
+    # Build flags
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        target_compile_options(${COMPONENT_NAME} PRIVATE -g)
+    elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+        target_compile_options(${COMPONENT_NAME} PRIVATE -O2)
+    endif()
+
+    # Suffixes
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        set_target_properties(${COMPONENT_NAME} PROPERTIES SUFFIX "_${COMPONENT_VERSION}.DEBUG.so")
+    elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+        set_target_properties(${COMPONENT_NAME} PROPERTIES SUFFIX "_${COMPONENT_VERSION}.so")
+    endif()
+    target_compile_definitions(${COMPONENT_NAME} PRIVATE CCR_LIB_VERSION="${COMPONENT_VERSION}")
+
+    # Qt define
+    if (COMPONENTS_IS_ENABLED_QT)
+        target_compile_definitions(${COMPONENT_NAME} PRIVATE -DCOMPONENTS_IS_ENABLED_QT)
+    endif()
+
+    # Includes
+    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src")
+        message(FATAL_ERROR "[COMPONENTS] v2 Error configuring component! Not found sources dir: " "${CMAKE_CURRENT_SOURCE_DIR}/src")
+    endif()
+    target_include_directories(${COMPONENT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
+
+    message(STATUS "[COMPONENTS] v2 Configured component: " ${COMPONENT_NAME})
 endfunction()
 
 
