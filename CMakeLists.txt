@@ -245,3 +245,97 @@ function(COMPONENTS_ADD_COMPONENT_TEST COMPONENT_NAME)
     message(STATUS "[COMPONENTS] Added test: " ${COMPONENT_NAME_TEST})
 endfunction()
 
+
+# ====================================== #
+# Conan consumption helpers
+# ====================================== #
+#
+# Components-Core never runs "conan install" on its own. It waits for a Conan
+# configuration provided by an external source: the hosting project's
+# Components-CMake bootstrap (COMPONENTS_CCR_CONAN_SETUP) or an IDE
+# (Qt Creator / CMake-Conan provider). If no Conan configuration is detected,
+# every helper below degrades to a no-op, so components keep building against
+# system libraries.
+#
+# Usage inside a component:
+#
+#     COMPONENTS_CONAN_IS_AVAILABLE(_conan_on)
+#     if (_conan_on)
+#         COMPONENTS_CONAN_REQUIRE(SQLite3)     # -> defines SQLite::SQLite3
+#     endif()
+#
+# ====================================== #
+
+# ----------------------------------------------------------------------------
+# COMPONENTS_CONAN_IS_AVAILABLE(<out_var>)
+# TRUE when a Conan configuration (generators folder) was provided externally.
+# ----------------------------------------------------------------------------
+function(COMPONENTS_CONAN_IS_AVAILABLE CCR_OUT)
+    set(_available FALSE)
+
+    get_property(_gen GLOBAL PROPERTY COMPONENTS_CCR_CONAN_GENERATORS_FOLDER)
+    if (_gen)
+        set(_available TRUE)
+    endif()
+    if (DEFINED CONAN_GENERATORS_FOLDER AND CONAN_GENERATORS_FOLDER)
+        set(_available TRUE)
+    endif()
+    if (DEFINED COMPONENTS_CCR_CONAN_GENERATORS_FOLDER AND COMPONENTS_CCR_CONAN_GENERATORS_FOLDER)
+        set(_available TRUE)
+    endif()
+
+    foreach(_entry IN LISTS CMAKE_PREFIX_PATH CMAKE_MODULE_PATH)
+        if (_entry MATCHES "[Cc]onan")
+            set(_available TRUE)
+        endif()
+    endforeach()
+
+    set(${CCR_OUT} ${_available} PARENT_SCOPE)
+endfunction()
+
+
+# ----------------------------------------------------------------------------
+# COMPONENTS_CONAN_REQUIRE(<package> [components...])
+# find_package() a Conan-provided dependency. No-op (no error) when Conan is
+# not detected. Sets COMPONENTS_CONAN_LAST_FOUND in the caller scope.
+# ----------------------------------------------------------------------------
+function(COMPONENTS_CONAN_REQUIRE CCR_PACKAGE)
+    set(COMPONENTS_CONAN_LAST_FOUND FALSE PARENT_SCOPE)
+
+    COMPONENTS_CONAN_IS_AVAILABLE(_conan_on)
+    if (NOT _conan_on)
+        message(STATUS "[COMPONENTS] Conan not available: skipping ${CCR_PACKAGE}")
+        return()
+    endif()
+
+    if (ARGN)
+        find_package(${CCR_PACKAGE} QUIET COMPONENTS ${ARGN})
+    else()
+        find_package(${CCR_PACKAGE} QUIET)
+    endif()
+
+    if (${CCR_PACKAGE}_FOUND)
+        set(COMPONENTS_CONAN_LAST_FOUND TRUE PARENT_SCOPE)
+        message(STATUS "[COMPONENTS] Found Conan dependency ${CCR_PACKAGE} components: ${ARGN}")
+    else()
+        message(WARNING "[COMPONENTS] Conan dependency ${CCR_PACKAGE} not found")
+    endif()
+endfunction()
+
+
+# ----------------------------------------------------------------------------
+# COMPONENTS_CONAN_LINK_LIBRARY(<target> <libraries...>)
+# Link Conan-provided targets into a component, skipping gracefully when no
+# Conan configuration is available.
+# ----------------------------------------------------------------------------
+function(COMPONENTS_CONAN_LINK_LIBRARY CCR_TARGET)
+    COMPONENTS_CONAN_IS_AVAILABLE(_conan_on)
+    if (NOT _conan_on)
+        message(STATUS "[COMPONENTS] Conan not available: not linking ${ARGN} to ${CCR_TARGET}")
+        return()
+    endif()
+
+    target_link_libraries(${CCR_TARGET} PRIVATE ${ARGN})
+    message(STATUS "[COMPONENTS] Conan-linked ${CCR_TARGET}: ${ARGN}")
+endfunction()
+
